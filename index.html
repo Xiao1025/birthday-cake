@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#08060d">
+<title>Happy Birthday · 星球蛋糕</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{color:#fff5fc;background:radial-gradient(ellipse at 50% 80%,#241025 0, #0d0815 45%,#050409 85%);font:16px system-ui,sans-serif}
+#scene{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;outline-offset:-5px}#scene:active{cursor:grabbing}
+h1{pointer-events:none;position:absolute;top:clamp(16px,4vh,48px);inset-inline:0;margin:0;text-align:center;font-family:"Arial Rounded MT Bold","Comic Sans MS",ui-rounded,system-ui,sans-serif;font-weight:900;font-size:clamp(42px,min(10vw,10vh),92px);line-height:.94;letter-spacing:-.035em;color:#ffc9e1}
+h1 span{display:inline-block;white-space:nowrap;paint-order:stroke fill;-webkit-text-stroke:.072em #ffc9e1;text-shadow:0 .036em #f599c4,0 .069em #d56a9e,0 .092em .025em #762d57,0 0 .32em #e986b29c}
+h1 span:first-child{transform:rotate(-4deg);color:#ffd5e8;-webkit-text-stroke-color:#ffd5e8}
+h1 span:last-child{transform:rotate(2deg)}
+button{font:inherit;color:inherit;border:1px solid #ffb8e34c;background:#30192c;border-radius:11px;padding:.55rem .8rem;cursor:pointer}button:hover{background:#482441}button:focus-visible,input:focus-visible{outline:2px solid #ffbcdf;outline-offset:3px}
+#settings{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));font-size:.875rem;background:#201325df}
+#hint{pointer-events:none;position:absolute;inset-inline:0;bottom:max(12px,env(safe-area-inset-bottom));margin:0;text-align:center;color:#eed4e7;font-size:.875rem;text-shadow:0 1px 5px #000}
+#wish{pointer-events:none;position:absolute;inset-inline:0;margin:0 auto;width:min(580px,calc(100% - 40px));bottom:max(42px,calc(env(safe-area-inset-bottom) + 32px));text-align:center;overflow-wrap:anywhere;color:#ffe1ba;font-size:clamp(.875rem,2.5vw,1.125rem);line-height:1.35;text-shadow:0 0 15px #e89768;opacity:0;visibility:hidden;transform:translateY(5px);transition:opacity .5s,transform .5s,visibility .5s}
+#wish[data-visible=true]{opacity:1;visibility:visible;transform:none}
+#wish-input,#letter-input{display:block;width:100%;margin:6px 0 14px;min-height:66px;resize:vertical;background:#130c19;color:inherit;border:1px solid #955477;border-radius:8px;padding:8px;font:inherit}
+@media(prefers-reduced-motion:reduce){#wish{transition:none}}
+ .scene-target{position:absolute;z-index:1;transform:translate(-50%,-50%);min-width:44px;min-height:44px;background:transparent;border:0;padding:0;border-radius:50%;touch-action:manipulation}
+.candle-target{min-width:0;border-radius:8px}
+.scene-target:hover{background:#ffdcad12}
+#wish-confirmation{pointer-events:none;position:absolute;z-index:1;max-width:calc(100% - 24px);margin:0;padding:5px 10px;border-radius:20px;transform:translate(-50%,-50%);background:#1d1228dd;color:#ffe3ae;white-space:nowrap;font-size:.875rem;text-shadow:0 0 12px #ffaf62}
+#letter-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;margin-bottom:0}
+dialog{width:min(440px,calc(100% - 24px));max-height:85dvh;overflow:auto;border:1px solid #955477;border-radius:20px;background:#1e1424;color:inherit;padding:20px}dialog::backdrop{background:#06040ac4}dialog h2{margin:0;font-size:1.25rem}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+#age{width:95px;background:#130c19;color:inherit;border:1px solid #955477;border-radius:8px;padding:8px;font:inherit}
+#files{width:100%;margin-top:8px;font:inherit}#photos{display:grid;gap:8px;padding:0;list-style:none}#photos li{display:flex;align-items:center;gap:9px}#photos img{width:40px;height:40px;object-fit:cover;border-radius:7px}#photos span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#status{min-height:1.4em;color:#f3bdd9;font-size:.875rem}.primary{background:#f8b6d7;color:#25101e;font-weight:700}.primary:hover{background:#ffd2e8}
+</style>
+</head>
+<body>
+<canvas id="scene" tabindex="0" role="button" aria-pressed="false" aria-label="散开或聚拢生日蛋糕" aria-describedby="hint"></canvas>
+<div id="candle-targets" role="group" aria-label="五根许愿蜡烛"></div>
+<button type="button" id="planet-target" class="scene-target" aria-label="打开生日星球里的信" title="打开生日星球里的信" hidden></button>
+<p id="wish-confirmation" role="status" hidden></p>
+<h1><span>Happy</span><br><span>Birthday</span></h1>
+<button id="settings" type="button">设置</button>
+<p id="wish" aria-live="polite"></p>
+<p id="hint">轻点散开 · 拖动旋转 · 点蜡烛许愿</p>
+<dialog id="editor" aria-labelledby="editor-title">
+<header class="row"><h2 id="editor-title">定制生日网页</h2><form method="dialog"><button>完成</button></form></header>
+<label class="row">蜡烛年龄 <input id="age" type="number" min="0" max="999" step="1"></label>
+<label for="wish-input">生日祝福（可选，最多 80 字）</label>
+<textarea id="wish-input" maxlength="80" rows="2" placeholder="愿你新一岁，继续闪闪发光"></textarea>
+<label for="letter-input">生日星球里的信（可选，最多 500 字）</label>
+<textarea id="letter-input" maxlength="500" rows="3" placeholder="写一封藏在星球里的生日信"></textarea>
+<label for="files">添加照片（最多 6 张）</label>
+<input id="files" type="file" accept="image/*" multiple>
+<ul id="photos"></ul>
+<p id="status" role="status"></p>
+<button class="primary" id="export" type="button">导出专属网页</button>
+</dialog>
+<dialog id="letter-dialog" aria-labelledby="letter-title">
+<header class="row"><h2 id="letter-title">生日星球的来信</h2><form method="dialog"><button>关闭</button></form></header>
+<p id="letter-text"></p>
+</dialog>
+<script id="birthday-data" type="application/json">{"age":25,"photos":[],"wish":"","letter":""}</script>
+<script>
+'use strict';
+const get = id => document.getElementById(id);
+const canvas = get('scene');
+const ctx = canvas.getContext('2d');
+const editor = get('editor');
+const data = JSON.parse(get('birthday-data').textContent);
+const originalPage = '<!doctype html>\n' + document.documentElement.outerHTML;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const palette = ['#f0a8ce','#bf9ce6','#adccff','#ecc2ad','#aaa4c6','#eab1bf','#a3d4d6'];
+const tau = Math.PI * 2;
+const mix = (a,b,t) => a+(b-a)*t;
+const clamp = (n,a,b) => Math.min(b,Math.max(a,n));
+let seed = 109;
+function random(){
+  seed = (Math.imul(1664525, seed) + 1013904223) >>> 0;
+  return seed / 4294967296;
+}
+const dust = Array.from({length:94},()=>[random(),random(),random()]);
+const objects = [];
+function burstPath(){
+  return {angle:random()*tau, distance:.39+Math.sqrt(random())*.61,
+    speed:.78+random()*.82, bend:(random()-.5)*.48, trail:random()>.44};
+}
+function add(kind,x,y,z,r,color){
+  objects.push({kind,x,y,z,r,color});
+}
+// Two staggered outer rows build each tier's sides. Smaller balls fill the exposed top.
+const tiers=[
+  {radius:144,bottom:145,top:108,outer:17,cap:12,size:25},
+  {radius:98,bottom:36,top:-2,outer:13,cap:9,size:22},
+  {radius:62,bottom:-60,top:-97,outer:10,cap:7,size:19}
+];
+const accents=['#ed818f','#79c9ed','#ffbd76','#b4dfbf','#8fa9fa'];
+let secretPlanet;
+let accentIndex=0;
+for(const [tierIndex,tier] of tiers.entries()){
+  for(const [row,count] of [tier.outer,tier.outer,tier.cap].entries()){
+    const ringCount=row===2?count-1:count;
+    const sizes=Array.from({length:count},(_,i)=>{
+      if(row===2)return tier.size*(i===count-1?.9:[.43,.78,.56,1.03][(i+tierIndex)%4]);
+      const scale=[1.39,.55,.91,1.15,.66,.82,.48,1.25][(i+row*3+tierIndex*2)%8];
+      return tier.size*scale*(.96+random()*.08);
+    });
+    // Share the circumference by neighboring diameters so large and small orbs can touch.
+    const gaps=sizes.slice(0,ringCount).map((size,i)=>size+sizes[(i+1)%ringCount]);
+    const total=gaps.reduce((sum,gap)=>sum+gap,0);
+    let arc=0;
+    for(let i=0;i<count;i++){
+      const center=row===2&&i===count-1;
+      const angle=(arc/total+.083*row+.023*tierIndex)*tau;
+      arc+=gaps[i]||0;
+      const size=sizes[i];
+      const edgeInset=row===2?0:(size-tier.size)*.33;
+      const distance=center?0:tier.radius*(row===2?.53:1)-edgeInset+(random()-.5)*8;
+      const secondBurst=row===2&&i%2===0;
+      const color=secondBurst?accents[accentIndex++%accents.length]:palette[(i+2*row+tierIndex)%palette.length];
+      const planet=row===1&&i===(tierIndex===0?3: tierIndex===1?5:7);
+      add(planet?'planet':'orb',Math.cos(angle)*distance,
+        (row===0?tier.bottom+(.9*tier.size-size)*.55:tier.top)+(random()-.5)*10,Math.sin(angle)*distance,size,color);
+      const ball=objects[objects.length-1];
+      ball.secondBurst=secondBurst;
+      if(planet&&tierIndex===0)secretPlanet=ball;
+    }
+  }
+}
+add('star',38,118,157,17,'#ffe0a0');
+add('star',-33,12,118,15,'#ffe2a2');
+add('star',-48,-79,58,13,'#ffe2a2');
+add('crystal',-104,122,114,30,'#e3c7fb');
+add('crystal',84,31,75,27,'#eed4ff');
+for(const o of objects) o.flight=burstPath();
+const photoFlights=Array.from({length:6},burstPath);
+let photoObjects = [];
+function refreshPhotos(){
+  const slots=[[-114,55,119],[115,52,119],[-76,-41,85],[76,-43,85],[-88,122,141],[89,121,141]];
+  photoObjects=data.photos.map((photo,i)=>{
+    const image = new Image();
+    image.src = photo.src;
+    const [x,y,z] = slots[i];
+    return {kind:'photo',x,y,z,r:24,image,i,flight:photoFlights[i]};
+  });
+  get('photos').replaceChildren(...data.photos.map((photo,i)=>{
+    const li=document.createElement('li');
+    const img=new Image(); img.src=photo.src; img.alt='';
+    const name=document.createElement('span'); name.textContent=photo.name;
+    const button=document.createElement('button'); button.textContent='移除';
+    button.setAttribute('aria-label','移除 '+photo.name);
+    button.onclick=()=>{data.photos.splice(i,1);refreshPhotos();};
+    li.append(img,name,button);
+    return li;
+  }));
+}
+refreshPhotos();
+const wish=get('wish');
+const wishInput=get('wish-input');
+const letterInput=get('letter-input');
+const candles=[
+  {word:'health',color:'#96e4b9'},
+  {word:'love',color:'#ff9ebf'},
+  {word:'money',color:'#ffce79'},
+  {word:'brave',color:'#9bbdff'},
+  {word:'beautiful',color:'#d3a6fc'}
+].map(({word,color},i)=>{
+  const [x,z]=[[-54,4],[-30,33],[0,-29],[30,33],[54,4]][i];
+  const button=document.createElement('button');
+  button.type='button';
+  button.className='scene-target candle-target';
+  button.setAttribute('aria-label','吹灭 '+word+' 蜡烛');
+  button.title=word;
+  get('candle-targets').append(button);
+  const surface=objects.reduce((top,ball)=>{
+    if(ball.y>-82||(ball.kind!=='orb'&&ball.kind!=='planet'))return top;
+    const distance=Math.hypot(ball.x-x,ball.z-z);
+    if(distance>=ball.r)return top;
+    return Math.min(top,ball.y-Math.sqrt(ball.r**2-distance**2));
+  },-98);
+  return {word,color,button,x,z,footY:surface+8,height:76+[0,7,13,5,2][i],outAt:Infinity};
+});
+const planetTarget=get('planet-target');
+const wishConfirmation=get('wish-confirmation');
+const letterDialog=get('letter-dialog');
+letterInput.value=data.letter||'';
+wishInput.value=data.wish||'';
+wish.textContent=wishInput.value;
+let W,H,dpr,S,cx,cy,anchor,topEdge,wishSpace;
+function resize(){
+  W=canvas.clientWidth; H=canvas.clientHeight;
+  dpr=Math.min(devicePixelRatio||1,2);
+  canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr);
+  topEdge=document.querySelector('h1').getBoundingClientRect().bottom;
+  wishSpace=wish.textContent?Math.min(wish.offsetHeight+15,Math.max(0,H*.22)):0;
+  const available=H-topEdge-60-wishSpace;
+  S=Math.min(W/451,available/555,1.4);
+  S=Math.max(.06,S); cx=W/2;
+  cy=topEdge+17+(available-555*S)/2+303*S;
+  anchor=cy-194*S;
+  wishConfirmation.style.left=cx+'px';
+  wishConfirmation.style.top=Math.max(topEdge+13,cy-272*S)+'px';
+}
+new ResizeObserver(resize).observe(canvas); resize();
+function poly(points){
+  ctx.beginPath(); points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();
+}
+function fade(hex,alpha){return hex+Math.round(alpha*255).toString(16).padStart(2,'0');}
+function ring(r,front){
+  ctx.save();ctx.rotate(-.34);ctx.shadowBlur=12;ctx.shadowColor='#ffba60';
+  ctx.strokeStyle='#fff0c4';ctx.lineWidth=Math.max(1,r*.09);ctx.beginPath();
+  ctx.ellipse(0,0,r*1.52,r*.38,0,front?0:Math.PI,front?Math.PI:tau);ctx.stroke();ctx.restore();
+}
+function orb(r,color,planet){
+  if(planet) ring(r,false);
+  const g=ctx.createRadialGradient(-r*.33,-r*.41,r*.02,0,0,r);
+  g.addColorStop(0,'#fff7fd');g.addColorStop(.16,fade(color,.98));
+  g.addColorStop(.53,fade(color,.76));g.addColorStop(.82,fade(color,.48));
+  g.addColorStop(1,fade(color,.97));
+  ctx.beginPath();ctx.arc(0,0,r,0,tau);ctx.fillStyle=g;ctx.fill();
+  ctx.strokeStyle='#ffffff36';ctx.lineWidth=.8;ctx.stroke();
+  ctx.save();ctx.rotate(-.64);
+  const shine=ctx.createRadialGradient(-r*.08,-r*.64,0,-r*.08,-r*.64,r*.31);
+  shine.addColorStop(0,'#fffefde0');shine.addColorStop(1,'#fffefd00');
+  ctx.fillStyle=shine;ctx.beginPath();ctx.ellipse(-r*.08,-r*.64,r*.31,r*.15,0,0,tau);ctx.fill();ctx.restore();
+  if(planet) ring(r,true);
+}
+function star(r){
+  poly(Array.from({length:10},(_,i)=>{
+    const a=i*Math.PI/5-Math.PI/2, q=i%2?r*.49:r;
+    return [Math.cos(a)*q,Math.sin(a)*q];
+  }));
+  ctx.shadowColor='#ffbd68';ctx.shadowBlur=15;
+  const g=ctx.createLinearGradient(0,-r,0,r);g.addColorStop(0,'#fff9d9');g.addColorStop(1,'#ffc179');ctx.fillStyle=g;ctx.fill();
+}
+function crystal(r){
+  for(const [dx,angle,scale] of [[-.31,-.49,.66],[.27,.49,.68],[0,-.14,1]]){
+    ctx.save();ctx.translate(dx*r,r*.59);ctx.rotate(angle);ctx.scale(r*scale,r*scale);
+    poly([[-.23,0],[-.3,-1.12],[0,-1.67],[.29,-1.1],[.15,0]]);
+    const g=ctx.createLinearGradient(-.3,0,.29,0);g.addColorStop(0,'#d9c5ff70');g.addColorStop(.47,'#fff3ff');g.addColorStop(1,'#a688e989');
+    ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#fff0fada';ctx.lineWidth=.025;ctx.stroke();
+    poly([[0,-1.67],[.29,-1.1],[.15,0],[.04,-1.04]]);
+    ctx.fillStyle='#e2acdf84';ctx.fill();ctx.restore();
+  }
+}
+function photoCard(o,r){
+  if(!o.image.complete||!o.image.naturalWidth) return;
+  ctx.rotate(o.i%2?.12:-.12);
+  ctx.shadowColor='#f7b8e590';ctx.shadowBlur=12;
+  ctx.fillStyle='#ffe5f4';ctx.beginPath();ctx.roundRect(-r,-r,r*2,r*2.13,r*.14);ctx.fill();
+  ctx.shadowBlur=0;
+  const dim=Math.min(o.image.naturalWidth,o.image.naturalHeight);
+  ctx.drawImage(o.image,(o.image.naturalWidth-dim)/2,(o.image.naturalHeight-dim)/2,dim,dim,-r*.87,-r*.87,r*1.74,r*1.74);
+}
+const restPitch=-.20;
+let yaw=0,pitch=restPitch,targetYaw=0,targetPitch=restPitch,offsetX=0,offsetY=0,scattered=false,progress=0,drag;
+let candlePose;
+function scenePose(){
+  return {cos:Math.cos(yaw),sin:Math.sin(yaw),cp:Math.cos(pitch),sp:Math.sin(pitch),offsetX,offsetY};
+}
+function project(x,y,z,pose){
+  const sideways=x*pose.cos+z*pose.sin;
+  const forward=z*pose.cos-x*pose.sin;
+  const vertical=y*pose.cp-forward*pose.sp;
+  const depth=y*pose.sp+forward*pose.cp;
+  const scale=S*730/(730-depth);
+  return {x:cx+sideways*scale+pose.offsetX,y:cy+vertical*scale+pose.offsetY,depth,scale};
+}
+let secondProgress=0, openedAt=-Infinity, returnedAt=-Infinity;
+const secondBurstDelay=240;
+const returnShimmerDelay=590;
+const introStartedAt=performance.now();
+const introGlowAt=210;
+const introFireworkAt=1390;
+const fireworkDuration=1750;
+let introFinished=false;
+function introLight(elapsed,y){
+  const tier=y>49?0:y>-53?1:2;
+  const fadeIn=clamp((elapsed-introGlowAt-145-tier*215)/410,0,1);
+  return .24+.76*fadeIn*fadeIn*(3-2*fadeIn);
+}
+let blownAt=Infinity;
+const wishStars=objects.filter(o=>o.secondBurst).slice(0,7);
+function drawObjects(t,introElapsed=Infinity,blowElapsed=-Infinity){
+  const pose=scenePose();
+  const stages=[...objects,...photoObjects].map((o,i)=>{
+    const {x:originX,y:originY,depth,scale}=project(o.x,o.y,o.z,pose);
+    const radius=o.r*scale;
+    const flight=o.flight;
+    const speed=o.kind==='photo'?.69:o.r<20?flight.speed*1.16:flight.speed*.9;
+    const firstWave=1-Math.pow(1-progress,speed);
+    const spread=o.secondBurst?firstWave*.31+secondProgress*.69:firstWave;
+    const r=mix(radius,Math.min(radius*.86,W/14,H/19),spread);
+    const margin=Math.max(14,r*1.6+9);
+    const safeTop=Math.min(H-margin,topEdge+margin);
+    const safeBottom=Math.max(safeTop,H-margin-20);
+    const safeMid=(safeTop+safeBottom)/2;
+    const drift=reduced?0:Math.sin(t*1.3+i)*3;
+    // A curved radial flight preserves a burst silhouette without arranging pieces in rows.
+    function position(amount){
+      const split=o.secondBurst?1.1*(1-clamp((amount-.28)/.72,0,1)):0;
+      const angle=flight.angle+flight.bend*(1-amount)+split;
+      const reach=flight.distance*(o.r<20?1:.93);
+      const vx=Math.cos(angle), vy=Math.sin(angle);
+      const edge=1/Math.max(Math.abs(vx),Math.abs(vy));
+      const sx=cx+vx*edge*Math.max(0,W/2-margin)*reach;
+      const sy=safeMid+vy*edge*(safeBottom-safeTop)/2*reach;
+      return [mix(originX,sx+drift,amount),
+        mix(originY,sy-drift,amount)-Math.sin(amount*Math.PI)*o.r*S*.36];
+    }
+    const [px,py]=position(spread);
+    const outgoingTrail=scattered&&(flight.trail||o.secondBurst)&&o.r<30;
+    const incomingTrail=!scattered&&o.r<18;
+    const showTrail=!reduced&&o.color&&spread>.035&&spread<.93&&(outgoingTrail||incomingTrail);
+    const tailOffset=scattered?-(o.secondBurst?.21:.12)*(1-spread):.11;
+    const tail=showTrail?position(clamp(spread+tailOffset,0,1)):null;
+    return {o,r,depth,x:px,y:py,tail,spread};
+  });
+  planetTarget.hidden=!scattered||progress<.92;
+  const hiddenPlanet=stages.find(stage=>stage.o===secretPlanet);
+  planetTarget.style.left=hiddenPlanet.x+'px';
+  planetTarget.style.top=hiddenPlanet.y+'px';
+  planetTarget.style.width=Math.max(44,hiddenPlanet.r*2.7)+'px';
+  planetTarget.style.height=Math.max(44,hiddenPlanet.r*2.1)+'px';
+  stages.sort((a,b)=>a.depth-b.depth);
+  const dim=reduced?1:1-.52*Math.max(0,1-Math.abs(blowElapsed-410)/350);
+  for(const {o,r,x,y,tail,spread} of stages){
+    ctx.save();
+    ctx.globalAlpha=introLight(introElapsed,o.y)*dim;
+    if(tail&&Math.hypot(tail[0]-x,tail[1]-y)>1){
+      const glow=ctx.createLinearGradient(...tail,x,y);
+      const trailColor=scattered?o.color:'#ffe2a1';
+      glow.addColorStop(0,fade(trailColor,0));
+      glow.addColorStop(1,fade(trailColor,(1-spread)*.72));
+      ctx.strokeStyle=glow;
+      ctx.lineWidth=Math.max(1,r*.2);
+      ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(...tail);ctx.lineTo(x,y);ctx.stroke();
+    }
+    ctx.translate(x,y);
+    if(o.kind==='star')star(r);
+    else if(o.kind==='crystal')crystal(r);
+    else if(o.kind==='photo')photoCard(o,r);
+    else orb(r,o.color,o.kind==='planet');
+    ctx.restore();
+  }
+  if(!planetTarget.hidden){
+    const {x,y,r}=hiddenPlanet;
+    const glint=reduced?.8:.34+.66*Math.pow((1+Math.sin(t*4))/2,5);
+    ctx.save();ctx.translate(x+r*.85,y-r*.52);ctx.globalAlpha=glint;star(Math.max(5,r*.37));ctx.restore();
+  }
+  if(!reduced&&blowElapsed>250&&blowElapsed<1850){
+    const age=(blowElapsed-250)/1600;
+    ctx.save();
+    ctx.globalAlpha=Math.sin(Math.PI*age);
+    for(const {o,x,y,r} of stages){
+      if(!wishStars.includes(o))continue;
+      ctx.save();ctx.translate(x,y-16*S*age);star(Math.max(3,r*.95));ctx.restore();
+    }
+    ctx.restore();
+  }
+}
+function stardust(now){
+  const elapsed=now-returnedAt-returnShimmerDelay;
+  if(reduced||scattered||elapsed<0||elapsed>540)return;
+  const phase=elapsed/540;
+  const pose=scenePose();
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
+  for(const o of objects){
+    if(o.kind!=='orb'||o.r>=19)continue;
+    const height=clamp((144-o.y)/270,0,1);
+    const strength=Math.max(0,1-Math.abs(height-phase)*5);
+    if(!strength)continue;
+    const {x:px,y:py,scale}=project(o.x,o.y,o.z,pose);
+    const size=(3+o.r*.34)*scale;
+    ctx.globalAlpha=strength;
+    const glow=ctx.createRadialGradient(px,py,0,px,py,size*2.6);
+    glow.addColorStop(0,'#fff4cf');glow.addColorStop(.3,'#ffcf8f95');glow.addColorStop(1,'#ffbd6b00');
+    ctx.fillStyle=glow;
+    ctx.fillRect(px-size*2.6,py-size*2.6,size*5.2,size*5.2);
+  }
+  ctx.restore();
+}
+let burstAt=introStartedAt+introFireworkAt;
+function updateWish(now){
+  const visible=!scattered&&(reduced||now>=burstAt+fireworkDuration);
+  if(wish.dataset.visible!==String(visible))wish.dataset.visible=visible;
+}
+const sparks=Array.from({length:78},(_,i)=>({
+  side:i%2?1:-1, direction:random()*tau,speed:.45+random()*.65,
+  color:['#ffd998','#ffabd4','#ffeec5','#c9b4ff'][i%4],delay:random()*.36
+}));
+function fireworks(now){
+  const elapsed=(now-burstAt)/1000;
+  if(elapsed<0||elapsed>fireworkDuration/1000||reduced)return;
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  for(const p of sparks){
+    const age=elapsed-p.delay;
+    if(age<=0||age>=1.3)continue;
+    const d=age*(1-age*.21)*p.speed*Math.min(W*.28,155);
+    const x=cx+p.side*46*S+Math.cos(p.direction)*d;
+    const y=anchor-20*S+Math.sin(p.direction)*d+age*age*22;
+    ctx.globalAlpha=(1-age/1.3)**2;
+    ctx.strokeStyle=p.color;ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-Math.cos(p.direction)*7,y-Math.sin(p.direction)*7);ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawCandles(t,introElapsed,now){
+  ctx.save();ctx.translate(cx,cy-238*S);ctx.scale(S,S);
+  const n=String(data.age);
+  ctx.font='900 '+(n.length>2?41:51)+'px "Arial Rounded MT Bold",system-ui';
+  ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillStyle='#fff0c7';
+  ctx.shadowColor='#ffad50';ctx.shadowBlur=15;ctx.fillText(n,0,0);
+  ctx.restore();
+
+  const pose=candlePose||scenePose();
+  const mounts=candles.map((entry,i)=>{
+    const base=project(entry.x,entry.footY,entry.z,pose);
+    const tip=project(entry.x,entry.footY-entry.height,entry.z,pose);
+    return {entry,i,base,tip};
+  }).sort((a,b)=>a.base.depth-b.base.depth);
+  mounts.forEach(({entry,i,base,tip},layer)=>{
+    const elapsed=now-entry.outAt;
+    const extinguished=elapsed>=(reduced?0:320);
+    const length=Math.hypot(tip.x-base.x,tip.y-base.y);
+    const width=18*tip.scale;
+    const tilt=Math.atan2(base.y-tip.y,base.x-tip.x)-Math.PI/2;
+    entry.button.style.left=((base.x+tip.x)/2)+'px';
+    entry.button.style.top=((base.y+tip.y)/2-9*tip.scale)+'px';
+    entry.button.style.width=Math.max(15,width+5)+'px';
+    entry.button.style.height=Math.max(44,length+22*tip.scale)+'px';
+    entry.button.style.zIndex=String(1+layer);
+    entry.button.style.transform='translate(-50%,-50%) rotate('+tilt+'rad)';
+    ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(tilt);
+    ctx.globalAlpha=extinguished?.75:1;
+    const wax=ctx.createLinearGradient(-width/2,0,width/2,0);
+    wax.addColorStop(0,entry.color+'a8');wax.addColorStop(.36,'#ffeefb');wax.addColorStop(.63,entry.color);wax.addColorStop(1,entry.color+'aa');
+    ctx.fillStyle=wax;
+    ctx.beginPath();ctx.roundRect(-width/2,0,width,length,width*.45);ctx.fill();
+    ctx.fillStyle='#322138';
+    ctx.save();ctx.translate(0,length*.47);ctx.rotate(-Math.PI/2);
+    ctx.font='700 '+Math.max(8,10.7*tip.scale)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(entry.word,0,0,length*.79);
+    ctx.restore();
+    ctx.globalAlpha=1;
+    ctx.scale(tip.scale*.79,tip.scale*.79);
+    ctx.strokeStyle=extinguished?'#9b8892':'#ffe3a4';
+    ctx.lineWidth=2.4;
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-7);ctx.stroke();
+    ctx.translate(0,-8);
+    if(!extinguished){
+      const ignition=clamp((introElapsed-introGlowAt-i*65)/300,0,1);
+      const gust=clamp(elapsed/320,0,1);
+      const lean=reduced?0:Math.sin(t*13+i)*1.7+11*Math.sin(gust*Math.PI);
+      ctx.shadowColor=entry.color;ctx.shadowBlur=18*ignition;
+      ctx.globalAlpha=ignition*(1-gust);
+      ctx.scale(.25+.75*ignition,(.12+.88*ignition)*(1-gust*.8));
+      const flame=ctx.createLinearGradient(0,-35,0,0);
+      flame.addColorStop(0,'#fffbea');flame.addColorStop(.51,'#fff2b8');flame.addColorStop(1,'#ff9c52');
+      ctx.fillStyle=flame;
+      ctx.beginPath();ctx.moveTo(0,0);
+      ctx.bezierCurveTo(-13,-2,-8,-20,lean,-35);
+      ctx.bezierCurveTo(11,-20,13,-4,0,0);ctx.fill();
+    }else if(!reduced&&elapsed<1300){
+      const age=(elapsed-320)/980;
+      ctx.strokeStyle='#d7c6e5';ctx.lineWidth=2.2;
+      ctx.globalAlpha=.5*(1-age);
+      ctx.beginPath();ctx.moveTo(0,-age*16);
+      ctx.bezierCurveTo(-9,-8-age*20,14,-13-age*26,3,-20-age*32);ctx.stroke();
+    }
+    ctx.restore();
+  });
+}
+let previous=performance.now();
+function frame(now){
+  const dt=Math.min(50,now-previous);previous=now;
+  const t=now/1000;
+  const follow=1-Math.exp(-dt/92);
+  yaw=mix(yaw,targetYaw,follow);pitch=mix(pitch,targetPitch,follow);
+  offsetX=mix(offsetX,clamp(targetYaw,-.56,.56)*15,follow);offsetY=mix(offsetY,targetPitch*17,follow);
+  const desired=scattered?1:0;
+  progress=reduced?desired:mix(progress,desired,1-Math.exp(-dt/(scattered?128:127)));
+  const secondTarget=scattered&&now-openedAt>=secondBurstDelay?1:0;
+  secondProgress=reduced?desired:mix(secondProgress,secondTarget,1-Math.exp(-dt/(scattered?88:84)));
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  for(const [x,y,q] of dust){
+    ctx.fillStyle='rgba(249,208,234,'+(.08+q*.29)+')';
+    ctx.beginPath();ctx.arc(x*W,y*H,.35+q*.95,0,tau);ctx.fill();
+  }
+  ctx.save();ctx.translate(cx,cy+206*S);ctx.scale(1,.23);
+  const pool=ctx.createRadialGradient(0,0,0,0,0,201*S);
+  pool.addColorStop(0,'#faba9d48');pool.addColorStop(.44,'#de8ebe24');pool.addColorStop(1,'#de8ebe00');
+  ctx.fillStyle=pool;ctx.fillRect(-201*S,-201*S,402*S,402*S);ctx.restore();
+  const elapsed=reduced||introFinished?Infinity:now-introStartedAt;
+  const blowElapsed=now-blownAt;
+  drawObjects(t,elapsed,blowElapsed);stardust(now);fireworks(now);drawCandles(t,elapsed,now);
+  const showConfirmation=blowElapsed>=(reduced?0:320)&&blowElapsed<3400;
+  if(wishConfirmation.hidden===showConfirmation){
+    wishConfirmation.hidden=!showConfirmation;
+    wishConfirmation.textContent=showConfirmation?'愿望已经收到':'';
+  }
+  updateWish(now);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+for(const entry of candles){
+  entry.button.onclick=()=>{
+    if(Number.isFinite(entry.outAt))return;
+    entry.outAt=performance.now();
+    entry.button.setAttribute('aria-disabled','true');
+    entry.button.setAttribute('aria-label',entry.word+' 蜡烛已熄灭');
+    introFinished=true;
+    if(candles.every(candle=>Number.isFinite(candle.outAt))){
+      blownAt=entry.outAt;
+      if(!scattered)get('hint').textContent='轻点散开 · 拖动旋转';
+    }
+  };
+}
+planetTarget.onclick=()=>{
+  if(planetTarget.hidden||!scattered)return;
+  get('letter-text').textContent=data.letter||'生日快乐！愿新一岁的你，常常遇见值得开心的小事。';
+  letterDialog.showModal();
+};
+function toggle(){
+  introFinished=true;
+  if(scattered)planetTarget.hidden=true;
+  scattered=!scattered;
+  canvas.setAttribute('aria-pressed',scattered);
+  get('hint').textContent=scattered?'轻点聚拢':'轻点散开 · 拖动旋转'+(Number.isFinite(blownAt)?'':' · 点蜡烛许愿');
+  const now=performance.now();
+  if(scattered){
+    candlePose=scenePose();
+    targetYaw=yaw;
+    targetPitch=pitch;
+    wish.dataset.visible=false;
+    openedAt=now;
+    if(burstAt>now&&returnedAt>0)burstAt=-Infinity;
+  }else{
+    candlePose=null;
+    returnedAt=now;
+    burstAt=now+returnShimmerDelay+350;
+  }
+}
+canvas.addEventListener('pointerdown',e=>{
+  if(!e.isPrimary||e.button!==0)return;
+  drag={id:e.pointerId,x:e.clientX,y:e.clientY,yaw:targetYaw,pitch:targetPitch,moved:false};
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove',e=>{
+  if(!e.isPrimary)return;
+  if(drag&&drag.id===e.pointerId){
+    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+    if(Math.hypot(dx,dy)>8)drag.moved=true;
+    if(drag.moved&&!scattered){
+      targetYaw=drag.yaw+dx*.009;targetPitch=clamp(drag.pitch-dy*.0035,-.42,-.10);
+    }
+  }else if(e.pointerType==='mouse'&&!scattered){
+    targetYaw=(e.clientX/W-.5)*.92;targetPitch=restPitch+(.5-e.clientY/H)*.19;
+  }
+});
+canvas.addEventListener('pointerup',e=>{
+  if(!drag||drag.id!==e.pointerId)return;
+  const tapped=!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<=8;
+  drag=null;if(tapped)toggle();
+});
+canvas.addEventListener('lostpointercapture',()=>drag=null);
+canvas.addEventListener('pointerleave',e=>{if(!drag&&!scattered&&e.pointerType==='mouse'){targetYaw=0;targetPitch=restPitch;}});
+canvas.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!e.repeat)toggle();}});
+get('settings').onclick=()=>editor.showModal();
+get('age').value=data.age;
+get('age').oninput=e=>{if(e.target.value!==''&&e.target.validity.valid)data.age=e.target.valueAsNumber;};
+get('age').onchange=e=>{e.target.value=data.age;};
+letterInput.oninput=()=>{data.letter=letterInput.value.trim();};
+wishInput.oninput=()=>{
+  data.wish=wishInput.value.trim();
+  wish.textContent=data.wish;
+  resize();
+};
+const status=get('status');
+const picker=get('files');
+const exportButton=get('export');
+function resizePhoto(file){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=()=>{
+      try{
+        const scale=Math.min(1,1000/Math.max(img.naturalWidth,img.naturalHeight));
+        const buffer=document.createElement('canvas');
+        buffer.width=Math.max(1,Math.round(img.naturalWidth*scale));
+        buffer.height=Math.max(1,Math.round(img.naturalHeight*scale));
+        const surface=buffer.getContext('2d');
+        surface.fillStyle='#201628';surface.fillRect(0,0,buffer.width,buffer.height);
+        surface.drawImage(img,0,0,buffer.width,buffer.height);
+        resolve({name:file.name,src:buffer.toDataURL('image/jpeg',.86)});
+      }catch(error){reject(error);}
+      finally{URL.revokeObjectURL(url);}
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('无法读取图片'));};
+    img.src=url;
+  });
+}
+picker.onchange=async()=>{
+  const files=[...picker.files];
+  const remaining=6-data.photos.length;
+  picker.disabled=exportButton.disabled=true;
+  status.textContent='正在读取照片…';
+  try{
+    const results=await Promise.allSettled(files.slice(0,remaining).map(resizePhoto));
+    const added=results.filter(r=>r.status==='fulfilled').map(r=>r.value);
+    data.photos.push(...added);refreshPhotos();
+    status.textContent='已添加 '+added.length+' 张。'+(results.length>added.length?' 部分图片无法读取。':'')+(files.length>remaining?' 最多保留 6 张。':'');
+  }finally{
+    picker.value='';picker.disabled=exportButton.disabled=false;
+  }
+};
+exportButton.onclick=()=>{
+  const payload=JSON.stringify(data).replace(/</g,'\\u003c');
+  const html=originalPage.replace(/(<script id="birthday-data" type="application\/json">)[\s\S]*?(<\/script>)/,(_,start,end)=>start+payload+end);
+  const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  const link=document.createElement('a');link.href=url;link.download='index.html';link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+  status.textContent='已生成 index.html，内含当前年龄和照片。';
+};
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
