@@ -23,7 +23,21 @@ button{font:inherit;color:inherit;border:1px solid #ffb8e34c;background:#30192c;
  .scene-target{position:absolute;z-index:1;transform:translate(-50%,-50%);min-width:44px;min-height:44px;background:transparent;border:0;padding:0;border-radius:50%;touch-action:manipulation}
 .candle-target{min-width:0;border-radius:8px}
 .scene-target:hover{background:#ffdcad12}
-#wish-confirmation{pointer-events:none;position:absolute;z-index:1;max-width:calc(100% - 24px);margin:0;padding:5px 10px;border-radius:20px;transform:translate(-50%,-50%);background:#1d1228dd;color:#ffe3ae;white-space:nowrap;font-size:.875rem;text-shadow:0 0 12px #ffaf62}
+#wish-confirmation{pointer-events:none;position:absolute;z-index:1;max-width:calc(100% - 24px);margin:0;padding:5px 10px;border-radius:20px;transform:translate(-50%,-50%);background:#1d1228dd;color:#ffe3ae;width:max-content;white-space:normal;overflow-wrap:anywhere;text-align:center;font-size:.875rem;text-shadow:0 0 12px #ffaf62}
+#candle-wishes{margin:12px 0 16px}
+#candle-wishes summary{cursor:pointer;color:#ffd1e7}
+.candle-wish-row{display:grid;grid-template-columns:5.4rem minmax(0,1fr);align-items:center;gap:8px;margin-top:8px}
+.candle-wish-row input{width:100%;border:1px solid #955477;border-radius:8px;background:#130c19;color:inherit;padding:7px;font:inherit}
+#melody-button{position:absolute;z-index:8;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));border-radius:22px;border-color:#edb3d675;color:#ffe7f3;background:#291b32;white-space:nowrap;font-size:.875rem;padding:6px 10px}
+#melody-button:hover{background:#513047}
+.melody-announcement{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#name-input{width:min(180px,55%);border:1px solid #955477;border-radius:8px;background:#130c19;color:inherit;padding:7px;font:inherit}
+#firework-button{position:absolute;z-index:8;bottom:max(8px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);border-radius:30px;white-space:nowrap;padding:6px 14px;touch-action:none;user-select:none;font-size:.875rem;font-weight:700;border-color:#f1a8cc99;color:#ffe9c4;background:linear-gradient(90deg,#75425f var(--charge,0%),#2a172b var(--charge,0%));box-shadow:0 0 15px #f7a07739}
+#firework-button:not([hidden])~#hint{visibility:hidden}
+#firework-name{position:absolute;z-index:7;left:50%;width:max-content;max-width:85%;margin:0;transform:translate(-50%,-50%);pointer-events:none;text-align:center;overflow-wrap:anywhere;color:#ffd1e7;font-family:"Arial Rounded MT Bold","Comic Sans MS","Microsoft YaHei","PingFang SC",ui-rounded,system-ui,sans-serif;font-weight:900;font-size:clamp(2.35rem,8vw,5.3rem);line-height:1.18;letter-spacing:.07em;paint-order:stroke fill;-webkit-text-stroke:.065em #ffd1e7;text-shadow:0 .044em #f38eb9,0 .084em #a54a80,0 0 .15em #fff0c7,0 0 .41em #f386c6;opacity:0}
+#firework-name span{display:inline-block}
+#firework-name span:nth-child(odd){transform:translateY(-.035em) rotate(-6deg);color:#ffe0ee;-webkit-text-stroke-color:#ffe0ee}
+#firework-name span:nth-child(even){transform:translateY(.045em) rotate(5deg)}
 #letter-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;margin-bottom:0}
 dialog{width:min(440px,calc(100% - 24px));max-height:85dvh;overflow:auto;border:1px solid #955477;border-radius:20px;background:#1e1424;color:inherit;padding:20px}dialog::backdrop{background:#06040ac4}dialog h2{margin:0;font-size:1.25rem}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
 #age{width:95px;background:#130c19;color:inherit;border:1px solid #955477;border-radius:8px;padding:8px;font:inherit}
@@ -34,16 +48,24 @@ dialog{width:min(440px,calc(100% - 24px));max-height:85dvh;overflow:auto;border:
 <canvas id="scene" tabindex="0" role="button" aria-pressed="false" aria-label="散开或聚拢生日蛋糕" aria-describedby="hint"></canvas>
 <div id="candle-targets" role="group" aria-label="五根许愿蜡烛"></div>
 <button type="button" id="planet-target" class="scene-target" aria-label="打开生日星球里的信" title="打开生日星球里的信" hidden></button>
+<div id="music-targets" role="group" aria-label="会唱歌的星球" hidden>
+<button id="melody-button" type="button">跟我弹</button>
+<span id="melody-announcement" class="melody-announcement" role="status"></span>
+</div>
 <p id="wish-confirmation" role="status" hidden></p>
 <h1><span>Happy</span><br><span>Birthday</span></h1>
 <button id="settings" type="button">设置</button>
 <p id="wish" aria-live="polite"></p>
+<button id="firework-button" type="button" aria-label="按住蓄光，松手放专属烟花" hidden>按住放烟花</button>
+<p id="firework-name" role="status" hidden></p>
 <p id="hint">轻点散开 · 拖动旋转 · 点蜡烛许愿</p>
 <dialog id="editor" aria-labelledby="editor-title">
 <header class="row"><h2 id="editor-title">定制生日网页</h2><form method="dialog"><button>完成</button></form></header>
 <label class="row">蜡烛年龄 <input id="age" type="number" min="0" max="999" step="1"></label>
+<label class="row">寿星名字 <input id="name-input" type="text" maxlength="24" placeholder="写在专属烟花里"></label>
 <label for="wish-input">生日祝福（可选，最多 80 字）</label>
 <textarea id="wish-input" maxlength="80" rows="2" placeholder="愿你新一岁，继续闪闪发光"></textarea>
+<details id="candle-wishes"><summary>五根蜡烛的祝福</summary><div id="candle-wish-fields"></div></details>
 <label for="letter-input">生日星球里的信（可选，最多 500 字）</label>
 <textarea id="letter-input" maxlength="500" rows="3" placeholder="写一封藏在星球里的生日信"></textarea>
 <label for="files">添加照片（最多 6 张）</label>
@@ -56,7 +78,7 @@ dialog{width:min(440px,calc(100% - 24px));max-height:85dvh;overflow:auto;border:
 <header class="row"><h2 id="letter-title">生日星球的来信</h2><form method="dialog"><button>关闭</button></form></header>
 <p id="letter-text"></p>
 </dialog>
-<script id="birthday-data" type="application/json">{"age":25,"photos":[],"wish":"","letter":""}</script>
+<script id="birthday-data" type="application/json">{"age":25,"photos":[],"wish":"","letter":"","candleWishes":{},"celebrant":""}</script>
 <script>
 'use strict';
 const get = id => document.getElementById(id);
@@ -154,13 +176,28 @@ refreshPhotos();
 const wish=get('wish');
 const wishInput=get('wish-input');
 const letterInput=get('letter-input');
+const nameInput=get('name-input');
+const fireworkButton=get('firework-button');
+const fireworkName=get('firework-name');
+nameInput.value=data.celebrant||'';
+data.candleWishes??={};
 const candles=[
-  {word:'health',color:'#96e4b9'},
-  {word:'love',color:'#ff9ebf'},
-  {word:'money',color:'#ffce79'},
-  {word:'brave',color:'#9bbdff'},
-  {word:'beautiful',color:'#d3a6fc'}
-].map(({word,color},i)=>{
+  {word:'health',color:'#96e4b9',blessing:'愿你睡得香，醒来有精神。'},
+  {word:'love',color:'#ff9ebf',blessing:'愿你自在地去爱，也被真心珍惜。'},
+  {word:'money',color:'#ffce79',blessing:'愿你的努力都有回报，也有余裕做喜欢的事。'},
+  {word:'brave',color:'#9bbdff',blessing:'愿你害怕的时候，也有勇气迈出一步。'},
+  {word:'beautiful',color:'#d3a6fc',blessing:'愿你每次照镜子，都喜欢眼前的自己。'}
+].map(({word,color,blessing},i)=>{
+  const label=document.createElement('label');
+  label.className='candle-wish-row';
+  const name=document.createElement('span');
+  name.textContent=word;name.style.color=color;
+  const input=document.createElement('input');
+  input.type='text';input.maxLength=80;input.placeholder=blessing;
+  input.value=data.candleWishes[word]||'';
+  input.oninput=()=>{data.candleWishes[word]=input.value.trim();};
+  label.append(name,input);
+  get('candle-wish-fields').append(label);
   const [x,z]=[[-54,4],[-30,33],[0,-29],[30,33],[54,4]][i];
   const button=document.createElement('button');
   button.type='button';
@@ -174,7 +211,7 @@ const candles=[
     if(distance>=ball.r)return top;
     return Math.min(top,ball.y-Math.sqrt(ball.r**2-distance**2));
   },-98);
-  return {word,color,button,x,z,footY:surface+8,height:76+[0,7,13,5,2][i],outAt:Infinity};
+  return {word,color,blessing,button,x,z,footY:surface+8,height:76+[0,7,13,5,2][i],outAt:Infinity};
 });
 const planetTarget=get('planet-target');
 const wishConfirmation=get('wish-confirmation');
@@ -194,6 +231,7 @@ function resize(){
   S=Math.max(.06,S); cx=W/2;
   cy=topEdge+17+(available-555*S)/2+303*S;
   anchor=cy-194*S;
+  fireworkName.style.top=Math.max(topEdge+52,cy-90*S)+'px';
   wishConfirmation.style.left=cx+'px';
   wishConfirmation.style.top=Math.max(topEdge+13,cy-272*S)+'px';
 }
@@ -276,9 +314,112 @@ function introLight(elapsed,y){
   return .24+.76*fadeIn*fadeIn*(3-2*fadeIn);
 }
 let blownAt=Infinity;
+let lastCandle=null;
+const constellationShape=[[-1,.82],[-.56,.34],[-.08,.05],[.44,.27],[1,.68]];
+const starTravel=760;
+const candleWishDelay=reduced?0:320;
+const candleWishDuration=2800;
+const musicTargets=get('music-targets');
+const melodyButton=get('melody-button');
+const melodyAnnouncement=get('melody-announcement');
+const birthdayMelody=[0,0,2,3,4,3,2,1,0,2,1,0];
+let melodyStep=-1;
+let melodyFinishedAt=-Infinity;
+const noteLetters=['do','re','mi','sol','la'];
+function updateMelodyGuide(){
+  if(melodyStep<0){
+    melodyButton.textContent='跟我弹';
+    melodyAnnouncement.textContent='';
+  }else if(melodyStep===birthdayMelody.length){
+    melodyButton.textContent='再弹一次';
+    melodyAnnouncement.textContent='生日旋律完成';
+  }else{
+    melodyButton.textContent='跟弹 '+(melodyStep+1)+'/'+birthdayMelody.length;
+    melodyAnnouncement.textContent='下一颗音符球 '+noteLetters[birthdayMelody[melodyStep]];
+  }
+  for(const planet of musicPlanets.values()){
+    if(birthdayMelody[melodyStep]===planet.index)planet.button.setAttribute('aria-current','step');
+    else planet.button.removeAttribute('aria-current');
+  }
+}
+melodyButton.onclick=()=>{
+  if(musicTargets.hidden)return;
+  melodyStep=0;
+  melodyFinishedAt=-Infinity;
+  updateMelodyGuide();
+};
+const musicOptions=[
+  ['do',523.25,'#ff9ec9',.13,.81],
+  ['re',587.33,'#ffd18e',.31,.9],
+  ['mi',659.25,'#a3e4bf',.50,.8],
+  ['sol',783.99,'#aad4ff',.69,.9],
+  ['la',880,'#d8b2ff',.87,.81]
+];
+const musicBalls=objects.filter(o=>o.kind==='orb'&&o.r>=16&&o.r<21).slice(0,musicOptions.length);
+const musicPlanets=new Map(musicBalls.map((ball,i)=>{
+  const [note,frequency,color,x,y]=musicOptions[i];
+  const button=document.createElement('button');
+  button.type='button';button.className='scene-target';
+  button.style.zIndex=6;
+  button.setAttribute('aria-label','演奏 '+note+' 音符');
+  button.title=note;
+  const planet={frequency,color,x,y,button,index:i,playedAt:-Infinity};
+  button.onclick=()=>{
+    if(musicTargets.hidden)return;
+    planet.playedAt=performance.now();
+    void playMusicNote(planet.frequency);
+    if(birthdayMelody[melodyStep]!==planet.index)return;
+    melodyStep++;
+    updateMelodyGuide();
+    if(melodyStep===birthdayMelody.length){
+      melodyFinishedAt=performance.now();
+      for(const other of musicPlanets.values()){
+        void playMusicNote(other.frequency,.22+other.index*.025,.48);
+      }
+    }
+  };
+  musicTargets.append(button);
+  return [ball,planet];
+}));
+let musicAudio;
+async function playMusicNote(frequency,delay=0,volume=1){
+  const Audio=window.AudioContext||window.webkitAudioContext;
+  if(!Audio)return;
+  try{
+    musicAudio??=new Audio();
+    if(musicAudio.state==='suspended')await musicAudio.resume();
+    const start=musicAudio.currentTime+delay;
+    for(const [ratio,level,decay] of [[1,.13,.62],[2,.036,.37],[3.01,.017,.22]]){
+      const tone=musicAudio.createOscillator();
+      const envelope=musicAudio.createGain();
+      tone.frequency.value=frequency*ratio;
+      envelope.gain.setValueAtTime(.0001,start);
+      envelope.gain.exponentialRampToValueAtTime(level*volume,start+.014);
+      envelope.gain.exponentialRampToValueAtTime(.0001,start+decay);
+      tone.connect(envelope);envelope.connect(musicAudio.destination);
+      tone.start(start);tone.stop(start+decay+.02);
+    }
+  }catch{
+    // The visual response remains available when the browser blocks sound.
+  }
+}
+const heartOutline=new Map(objects.filter(o=>o.kind==='orb'&&!musicPlanets.has(o))
+  .sort((a,b)=>a.r-b.r).slice(0,30).sort((a,b)=>a.flight.angle-b.flight.angle)
+  .map((ball,i,selection)=>{
+    const a=i*tau/selection.length;
+    return [ball,[16*Math.sin(a)**3,
+      13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a)]];
+  }));
+let heartAmount=0;
+function heartPhase(ms){
+  const ramp=clamp(Math.min((ms-850)/570,(4900-ms)/650),0,1);
+  return ramp*ramp*(3-2*ramp);
+}
 const wishStars=objects.filter(o=>o.secondBurst).slice(0,7);
 function drawObjects(t,introElapsed=Infinity,blowElapsed=-Infinity){
   const pose=scenePose();
+  const musicVisible=scattered&&progress>=.92;
+  musicTargets.hidden=!musicVisible;
   const stages=[...objects,...photoObjects].map((o,i)=>{
     const {x:originX,y:originY,depth,scale}=project(o.x,o.y,o.z,pose);
     const radius=o.r*scale;
@@ -286,7 +427,9 @@ function drawObjects(t,introElapsed=Infinity,blowElapsed=-Infinity){
     const speed=o.kind==='photo'?.69:o.r<20?flight.speed*1.16:flight.speed*.9;
     const firstWave=1-Math.pow(1-progress,speed);
     const spread=o.secondBurst?firstWave*.31+secondProgress*.69:firstWave;
-    const r=mix(radius,Math.min(radius*.86,W/14,H/19),spread);
+    const music=musicPlanets.get(o);
+    const scatteredRadius=music?clamp(W*.041,13,24):Math.min(radius*.86,W/14,H/19);
+    const r=mix(radius,scatteredRadius,spread);
     const margin=Math.max(14,r*1.6+9);
     const safeTop=Math.min(H-margin,topEdge+margin);
     const safeBottom=Math.max(safeTop,H-margin-20);
@@ -299,18 +442,33 @@ function drawObjects(t,introElapsed=Infinity,blowElapsed=-Infinity){
       const reach=flight.distance*(o.r<20?1:.93);
       const vx=Math.cos(angle), vy=Math.sin(angle);
       const edge=1/Math.max(Math.abs(vx),Math.abs(vy));
-      const sx=cx+vx*edge*Math.max(0,W/2-margin)*reach;
-      const sy=safeMid+vy*edge*(safeBottom-safeTop)/2*reach;
+      const sx=music?clamp(W*music.x,margin,W-margin):cx+vx*edge*Math.max(0,W/2-margin)*reach;
+      const destinationY=safeMid+vy*edge*(safeBottom-safeTop)/2*reach;
+      const sy=music?mix(safeTop,safeBottom-18,music.y):
+        o===secretPlanet?Math.min(destinationY,mix(safeTop,safeBottom,.68)):destinationY;
       return [mix(originX,sx+drift,amount),
         mix(originY,sy-drift,amount)-Math.sin(amount*Math.PI)*o.r*S*.36];
     }
-    const [px,py]=position(spread);
+    let [px,py]=position(spread);
+    const heartPoint=heartOutline.get(o);
+    if(heartPoint&&heartAmount>0){
+      const unit=Math.min(W/46,(H-topEdge)/52,14);
+      px=mix(px,cx+heartPoint[0]*unit,heartAmount);
+      py=mix(py,(topEdge+H)*.5+unit-heartPoint[1]*unit,heartAmount);
+    }
     const outgoingTrail=scattered&&(flight.trail||o.secondBurst)&&o.r<30;
     const incomingTrail=!scattered&&o.r<18;
     const showTrail=!reduced&&o.color&&spread>.035&&spread<.93&&(outgoingTrail||incomingTrail);
     const tailOffset=scattered?-(o.secondBurst?.21:.12)*(1-spread):.11;
     const tail=showTrail?position(clamp(spread+tailOffset,0,1)):null;
-    return {o,r,depth,x:px,y:py,tail,spread};
+    const inHeart=heartPoint?heartAmount:0;
+    if(music&&musicVisible){
+      music.button.style.left=px+'px';
+      music.button.style.top=py+'px';
+      music.button.style.width=music.button.style.height=Math.max(44,r*2.25)+'px';
+    }
+    return {o,r:mix(r,clamp(r,3,7),inHeart),depth:depth+inHeart*550+(musicVisible&&music?700:0),
+      x:px,y:py,tail,spread,inHeart,music};
   });
   planetTarget.hidden=!scattered||progress<.92;
   const hiddenPlanet=stages.find(stage=>stage.o===secretPlanet);
@@ -320,7 +478,7 @@ function drawObjects(t,introElapsed=Infinity,blowElapsed=-Infinity){
   planetTarget.style.height=Math.max(44,hiddenPlanet.r*2.1)+'px';
   stages.sort((a,b)=>a.depth-b.depth);
   const dim=reduced?1:1-.52*Math.max(0,1-Math.abs(blowElapsed-410)/350);
-  for(const {o,r,x,y,tail,spread} of stages){
+  for(const {o,r,x,y,tail,spread,inHeart,music} of stages){
     ctx.save();
     ctx.globalAlpha=introLight(introElapsed,o.y)*dim;
     if(tail&&Math.hypot(tail[0]-x,tail[1]-y)>1){
@@ -337,7 +495,34 @@ function drawObjects(t,introElapsed=Infinity,blowElapsed=-Infinity){
     if(o.kind==='star')star(r);
     else if(o.kind==='crystal')crystal(r);
     else if(o.kind==='photo')photoCard(o,r);
-    else orb(r,o.color,o.kind==='planet');
+    else{
+      if(inHeart>.15){ctx.shadowColor='#ff8ec4';ctx.shadowBlur=inHeart*13;}
+      if(music&&musicVisible){
+        const age=clamp((t*1000-music.playedAt)/520,0,1);
+        const pulse=1-age;
+        const guided=birthdayMelody[melodyStep]===music.index;
+        ctx.shadowColor=music.color;ctx.shadowBlur=9+pulse*19+(guided?15:0);
+        orb(r*(1+pulse*.13),music.color,false);
+        if(pulse>0&&!reduced){
+          ctx.globalAlpha=pulse*.72;
+          ctx.strokeStyle=music.color;ctx.lineWidth=1.5;
+          ctx.beginPath();ctx.arc(0,0,r*(1+age*.75),0,tau);ctx.stroke();
+          ctx.globalAlpha=1;
+        }
+        if(guided){
+          const guidePulse=reduced?1:.7+.3*Math.sin(t*7);
+          ctx.shadowBlur=9;ctx.globalAlpha=guidePulse;
+          ctx.strokeStyle='#fff4c2';ctx.lineWidth=2;
+          ctx.beginPath();ctx.arc(0,0,r+4,0,tau);ctx.stroke();
+          ctx.globalAlpha=1;
+        }
+        ctx.shadowBlur=0;ctx.fillStyle='#352440';
+        ctx.font='700 '+Math.round(r*1.23)+'px system-ui';
+        ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('♪',0,1);
+      }else{
+        orb(r,o.color,o.kind==='planet');
+      }
+    }
     ctx.restore();
   }
   if(!planetTarget.hidden){
@@ -423,6 +608,8 @@ function drawCandles(t,introElapsed,now){
     const length=Math.hypot(tip.x-base.x,tip.y-base.y);
     const width=18*tip.scale;
     const tilt=Math.atan2(base.y-tip.y,base.x-tip.x)-Math.PI/2;
+    entry.flameOrigin={x:(tip.x+Math.sin(tilt)*24*tip.scale)/W,
+      y:(tip.y-Math.cos(tilt)*24*tip.scale)/H};
     entry.button.style.left=((base.x+tip.x)/2)+'px';
     entry.button.style.top=((base.y+tip.y)/2-9*tip.scale)+'px';
     entry.button.style.width=Math.max(15,width+5)+'px';
@@ -469,6 +656,165 @@ function drawCandles(t,introElapsed,now){
     ctx.restore();
   });
 }
+function constellationPoints(now){
+  const width=Math.min(W*.34,172);
+  const height=Math.min(60,Math.max(27,(cy-topEdge)*.19));
+  return candles.map((entry,i)=>{
+    const elapsed=now-entry.outAt-candleWishDelay;
+    if(elapsed<0||!entry.starOrigin)return null;
+    const travel=reduced?1:clamp(elapsed/starTravel,0,1);
+    const easing=1-(1-travel)**3;
+    const [dx,dy]=constellationShape[i];
+    return {
+      x:mix(entry.starOrigin.x*W,cx+dx*width,easing),
+      y:mix(entry.starOrigin.y*H,topEdge+12+dy*height,easing),
+      opacity:reduced?1:clamp(elapsed/120,0,1),color:entry.color
+    };
+  });
+}
+function drawConstellation(now){
+  const points=constellationPoints(now);
+  const finale=now-blownAt-candleWishDelay-candleWishDuration;
+  const fadeOut=reduced?(finale<4200?1:0):1-clamp((finale-3300)/900,0,1);
+  if(!fadeOut)return;
+  if(finale>=0&&points.every(Boolean)){
+    ctx.save();
+    const connection=reduced?1:clamp(finale/500,0,1);
+    ctx.globalAlpha=connection*.77*fadeOut;
+    ctx.strokeStyle='#ffe4b9';
+    ctx.shadowBlur=10;
+    ctx.shadowColor='#ffbd8d';
+    ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
+    for(const point of points.slice(1))ctx.lineTo(point.x,point.y);
+    ctx.stroke();ctx.restore();
+  }
+  for(const point of points){
+    if(!point)continue;
+    ctx.save();ctx.translate(point.x,point.y);
+    ctx.globalAlpha=point.opacity*fadeOut;
+    ctx.shadowBlur=16;ctx.shadowColor=point.color;
+    ctx.fillStyle=point.color;
+    poly([[0,-8],[2,-2],[7,0],[2,2],[0,8],[-2,2],[-7,0],[-2,-2]]);
+    ctx.fill();
+    ctx.fillStyle='#fff6df';ctx.beginPath();ctx.arc(0,0,1.8,0,tau);ctx.fill();
+    ctx.restore();
+  }
+}
+const chargeTime=1050;
+let chargedAt=-Infinity;
+let showAt=Infinity;
+let showDuration=0;
+let celebration=[];
+let chargeInput=null;
+function launchCelebration(now,strength){
+  const count=Math.round(mix(5,9,strength));
+  const colors=['#ffd589','#ffa7d6','#c2a6ff','#9bdeff','#fff2bd','#ffb0a8','#afc5ff','#ffd1e6','#ffca8f'];
+  celebration=Array.from({length:count},(_,i)=>({
+    x:[.27,.73,.5,.17,.83,.63,.38,.18,.81][i],
+    y:[.32,.29,.16,.5,.49,.48,.47,.26,.24][i],
+    delay:i*.21,
+    color:colors[i],
+    particles:Array.from({length:Math.round(mix(48,88,strength))},(_,j)=>({
+      angle:j*2.39996,velocity:mix(.35,1,Math.random()),flicker:Math.random()*tau
+    }))
+  }));
+  showAt=now;
+  showDuration=reduced?3500:6500;
+}
+function drawCelebration(now){
+  const charging=Number.isFinite(chargedAt);
+  if(charging)fireworkButton.style.setProperty('--charge',clamp((now-chargedAt)/chargeTime,0,1)*100+'%');
+  const elapsed=now-showAt;
+  const active=elapsed>=0&&elapsed<showDuration;
+  const ready=now>=blownAt+candleWishDelay+candleWishDuration;
+  fireworkButton.hidden=!ready;
+  if(!charging)fireworkButton.disabled=active;
+  const nameAt=reduced?0:3350;
+  const showName=active&&elapsed>=nameAt;
+  if(fireworkName.hidden===showName){
+    fireworkName.hidden=!showName;
+    if(showName&&(!data.celebrant||data.celebrant==='生日快乐')){
+      const letters=Array.from('生日快乐',letter=>{
+        const span=document.createElement('span');
+        span.textContent=letter;
+        return span;
+      });
+      fireworkName.replaceChildren(...letters);
+    }else{
+      fireworkName.textContent=showName?data.celebrant:'';
+    }
+  }
+  if(showName){
+    const opacity=reduced?1:clamp(Math.min((elapsed-nameAt)/450,(showDuration-elapsed)/850),0,1);
+    fireworkName.style.opacity=opacity;
+  }
+  if(!active||reduced)return;
+  const skyHeight=Math.min(H*.62,H-topEdge);
+  const radius=Math.min(W*.31,H*.245,245);
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  for(const burst of celebration){
+    const age=elapsed/1000-burst.delay;
+    if(age<0||age>2.05)continue;
+    const centerX=burst.x*W;
+    const centerY=topEdge+skyHeight*burst.y;
+    ctx.strokeStyle=burst.color;ctx.lineCap='round';
+    if(age<.48){
+      const ratio=age/.48;
+      const x=mix(cx,centerX,ratio);
+      const y=mix(H*.82,centerY,ratio);
+      ctx.globalAlpha=.9;ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(mix(cx,x,.87),mix(H*.82,y,.87));ctx.stroke();
+      continue;
+    }
+    const flight=age-.48;
+    const reach=(1-Math.exp(-flight*2.1))*radius;
+    for(const particle of burst.particles){
+      const dx=Math.cos(particle.angle)*particle.velocity;
+      const dy=Math.sin(particle.angle)*particle.velocity;
+      const x=centerX+dx*reach,y=centerY+dy*reach+flight*flight*22;
+      const twinkle=.68+.32*Math.sin(flight*22+particle.flicker);
+      ctx.globalAlpha=clamp((1-flight/1.57)*twinkle,0,1);
+      ctx.lineWidth=1.6;
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-dx*11,y-dy*11-2);ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+function startCharge(input){
+  if(fireworkButton.hidden||fireworkButton.disabled||chargeInput!==null)return false;
+  chargeInput=input;
+  chargedAt=performance.now();
+  return true;
+}
+function stopCharge(input,release){
+  if(input!==chargeInput)return;
+  const now=performance.now();
+  const strength=clamp((now-chargedAt)/chargeTime,0,1);
+  chargedAt=-Infinity;
+  chargeInput=null;
+  fireworkButton.style.removeProperty('--charge');
+  if(release)launchCelebration(now,strength);
+}
+fireworkButton.onpointerdown=e=>{
+  if(e.button===0&&startCharge(e.pointerId))fireworkButton.setPointerCapture(e.pointerId);
+};
+fireworkButton.onpointerup=e=>stopCharge(e.pointerId,true);
+fireworkButton.onpointercancel=e=>stopCharge(e.pointerId,false);
+fireworkButton.onlostpointercapture=e=>stopCharge(e.pointerId,false);
+fireworkButton.onkeydown=e=>{
+  if(e.key!==' '&&e.key!=='Enter')return;
+  e.preventDefault();
+  if(!e.repeat)startCharge(e.key);
+};
+fireworkButton.onkeyup=e=>{
+  if(e.key!==' '&&e.key!=='Enter')return;
+  e.preventDefault();stopCharge(e.key,true);
+};
+fireworkButton.onblur=()=>{if(typeof chargeInput==='string')stopCharge(chargeInput,false);};
+fireworkButton.onclick=e=>{
+  if(e.detail===0&&startCharge('click'))stopCharge('click',true);
+};
 let previous=performance.now();
 function frame(now){
   const dt=Math.min(50,now-previous);previous=now;
@@ -480,6 +826,9 @@ function frame(now){
   progress=reduced?desired:mix(progress,desired,1-Math.exp(-dt/(scattered?128:127)));
   const secondTarget=scattered&&now-openedAt>=secondBurstDelay?1:0;
   secondProgress=reduced?desired:mix(secondProgress,secondTarget,1-Math.exp(-dt/(scattered?88:84)));
+  const encore=heartPhase(850+(now-melodyFinishedAt)*1.65);
+  const heartTarget=scattered?Math.max(heartPhase(now-openedAt),encore):0;
+  heartAmount=reduced?(heartTarget>.5?1:0):mix(heartAmount,heartTarget,1-Math.exp(-dt/62));
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
   for(const [x,y,q] of dust){
     ctx.fillStyle='rgba(249,208,234,'+(.08+q*.29)+')';
@@ -491,12 +840,16 @@ function frame(now){
   ctx.fillStyle=pool;ctx.fillRect(-201*S,-201*S,402*S,402*S);ctx.restore();
   const elapsed=reduced||introFinished?Infinity:now-introStartedAt;
   const blowElapsed=now-blownAt;
-  drawObjects(t,elapsed,blowElapsed);stardust(now);fireworks(now);drawCandles(t,elapsed,now);
-  const showConfirmation=blowElapsed>=(reduced?0:320)&&blowElapsed<3400;
-  if(wishConfirmation.hidden===showConfirmation){
-    wishConfirmation.hidden=!showConfirmation;
-    wishConfirmation.textContent=showConfirmation?'愿望已经收到':'';
+  drawObjects(t,elapsed,blowElapsed);stardust(now);fireworks(now);drawCandles(t,elapsed,now);drawConstellation(now);drawCelebration(now);
+  const wishAge=lastCandle?now-lastCandle.outAt-candleWishDelay:-1;
+  let message='';
+  if(wishAge>=0&&wishAge<candleWishDuration){
+    message=data.candleWishes[lastCandle.word]||lastCandle.blessing;
+  }else if(Number.isFinite(blownAt)&&wishAge>=candleWishDuration&&wishAge<candleWishDuration+3000){
+    message='愿望已经收到';
   }
+  if(wishConfirmation.textContent!==message)wishConfirmation.textContent=message;
+  wishConfirmation.hidden=!message;
   updateWish(now);
   requestAnimationFrame(frame);
 }
@@ -505,6 +858,10 @@ for(const entry of candles){
   entry.button.onclick=()=>{
     if(Number.isFinite(entry.outAt))return;
     entry.outAt=performance.now();
+    const pose=candlePose||scenePose();
+    const tip=project(entry.x,entry.footY-entry.height,entry.z,pose);
+    entry.starOrigin=entry.flameOrigin||{x:tip.x/W,y:(tip.y-24*tip.scale)/H};
+    lastCandle=entry;
     entry.button.setAttribute('aria-disabled','true');
     entry.button.setAttribute('aria-label',entry.word+' 蜡烛已熄灭');
     introFinished=true;
@@ -521,10 +878,16 @@ planetTarget.onclick=()=>{
 };
 function toggle(){
   introFinished=true;
-  if(scattered)planetTarget.hidden=true;
+  if(scattered){
+    planetTarget.hidden=true;
+    musicTargets.hidden=true;
+    melodyStep=-1;
+    melodyFinishedAt=-Infinity;
+    updateMelodyGuide();
+  }
   scattered=!scattered;
   canvas.setAttribute('aria-pressed',scattered);
-  get('hint').textContent=scattered?'轻点聚拢':'轻点散开 · 拖动旋转'+(Number.isFinite(blownAt)?'':' · 点蜡烛许愿');
+  get('hint').textContent=scattered?'点音符球弹奏 · 点空白处聚拢':'轻点散开 · 拖动旋转'+(Number.isFinite(blownAt)?'':' · 点蜡烛许愿');
   const now=performance.now();
   if(scattered){
     candlePose=scenePose();
@@ -568,6 +931,7 @@ get('settings').onclick=()=>editor.showModal();
 get('age').value=data.age;
 get('age').oninput=e=>{if(e.target.value!==''&&e.target.validity.valid)data.age=e.target.valueAsNumber;};
 get('age').onchange=e=>{e.target.value=data.age;};
+nameInput.oninput=()=>{data.celebrant=nameInput.value.trim();};
 letterInput.oninput=()=>{data.letter=letterInput.value.trim();};
 wishInput.oninput=()=>{
   data.wish=wishInput.value.trim();
@@ -623,6 +987,7 @@ exportButton.onclick=()=>{
 </script>
 </body>
 </html>
+
 
 
 
